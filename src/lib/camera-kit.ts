@@ -1,4 +1,4 @@
-import { bootstrapCameraKit, CameraKit, CameraKitSession, Lens } from "@snap/camera-kit";
+import { bootstrapCameraKit, CameraKit, CameraKitSession, Lens, createMediaStreamSource } from "@snap/camera-kit";
 
 const STAGING_API_TOKEN =
   "eyJhbGciOiJIUzI1NiIsImtpZCI6IkNhbnZhc1MyU0hNQUNQcm9kIiwidHlwIjoiSldUIn0.eyJhdWQiOiJjYW52YXMtY2FudmFzYXBpIiwiaXNzIjoiY2FudmFzLXMyc3Rva2VuIiwibmJmIjoxNzczMDc4MzY3LCJzdWIiOiI3Y2ZhNWMxNi0yNDQ5LTRkYTYtYjUzYS1lMjM2NGQ5YWFmMDV-U1RBR0lOR34wYzBmMWY3NS1jYjFhLTRjYTEtOTk1Yy0wNjZkYzhiYWRiOGMifQ.Czes9u05nXNNe9LH9gH_eWX1NnW57eQTBn25jegG2mA";
@@ -23,26 +23,21 @@ export async function initCameraKit(): Promise<CameraKit> {
 
 export async function loadLenses(cameraKit: CameraKit): Promise<Lens[]> {
   try {
-    const groups = await cameraKit.lensRepository.loadLensGroups([LENS_GROUP_ID]);
-    const lenses = groups.flatMap((g) => g.lenses);
-    if (lenses.length > 0) return lenses;
+    const result = await cameraKit.lensRepository.loadLensGroups([LENS_GROUP_ID]);
+    if (result.lenses.length > 0) return result.lenses;
   } catch (e) {
     console.warn("Primary lens group failed, trying demo group:", e);
   }
 
   // Fallback to demo group
   try {
-    const demoGroups = await cameraKit.lensRepository.loadLensGroups([DEMO_LENS_GROUP_ID]);
-    return demoGroups.flatMap((g) => g.lenses);
+    const demoResult = await cameraKit.lensRepository.loadLensGroups([DEMO_LENS_GROUP_ID]);
+    return demoResult.lenses;
   } catch (e) {
     console.error("Demo lens group also failed:", e);
     return [];
   }
 }
 
-export async function createSession(cameraKit: CameraKit): Promise<CameraKitSession> {
-  const session = await cameraKit.createSession();
-  return session;
-}
-
+export { createMediaStreamSource };
 export type { CameraKit, CameraKitSession, Lens };

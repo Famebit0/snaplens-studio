@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { initCameraKit, loadLenses, createSession, Lens, CameraKit, CameraKitSession } from "@/lib/camera-kit";
+import { initCameraKit, loadLenses, createMediaStreamSource, Lens, CameraKit, CameraKitSession } from "@/lib/camera-kit";
 import LensCarousel from "./LensCarousel";
 import CaptureControls from "./CaptureControls";
 import MediaPreview from "./MediaPreview";
@@ -10,7 +10,6 @@ type CameraFacing = "user" | "environment";
 
 export default function CameraView() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const liveRenderTarget = useRef<HTMLCanvasElement | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -48,7 +47,7 @@ export default function CameraView() {
         if (cancelled) return;
         setCameraKit(ck);
 
-        const sess = await createSession(ck);
+        const sess = await ck.createSession({ liveRenderTarget: canvasRef.current! });
         if (cancelled) return;
         setSession(sess);
 
@@ -56,14 +55,8 @@ export default function CameraView() {
         if (cancelled) return;
         setLenses(loadedLenses);
 
-        // Set render target
-        if (canvasRef.current) {
-          liveRenderTarget.current = canvasRef.current;
-          sess.output.live.renderTarget = canvasRef.current;
-        }
-
         // Start camera
-        await startCamera(sess, "user");
+        await startCamera(sess, ck, "user");
         setLoading(false);
       } catch (e) {
         console.error("Camera Kit init error:", e);
@@ -79,7 +72,7 @@ export default function CameraView() {
     };
   }, []);
 
-  const startCamera = async (sess: CameraKitSession, facingMode: CameraFacing) => {
+  const startCamera = async (sess: CameraKitSession, ck: CameraKit, facingMode: CameraFacing) => {
     try {
       // Stop existing stream
       if (mediaStreamRef.current) {
@@ -96,8 +89,9 @@ export default function CameraView() {
       });
 
       mediaStreamRef.current = stream;
-      await sess.setSource(stream);
-      await sess.play();
+      const source = createMediaStreamSource(stream, { cameraType: facingMode === "user" ? "front" : "back" });
+      await sess.setSource(source);
+      sess.play();
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
@@ -183,16 +177,16 @@ export default function CameraView() {
   };
 
   const handleFlipCamera = useCallback(async () => {
-    if (!session) return;
+    if (!session || !cameraKit) return;
     const newFacing = facing === "user" ? "environment" : "user";
     setFacing(newFacing);
     try {
-      await startCamera(session, newFacing);
+      await startCamera(session, cameraKit, newFacing);
     } catch {
       toast.error("Failed to switch camera");
       setFacing(facing);
     }
-  }, [session, facing]);
+  }, [session, cameraKit, facing]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
