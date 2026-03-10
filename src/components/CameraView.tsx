@@ -67,6 +67,7 @@ export default function CameraView() {
         const sess = await ck.createSession({ liveRenderTarget: canvasRef.current! });
         if (cancelled) return;
         setSession(sess);
+        sess.play("live");
 
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
