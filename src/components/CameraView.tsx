@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { initCameraKit, loadLenses, createMediaStreamSource, Lens, CameraKit, CameraKitSession } from "@/lib/camera-kit";
+import { initCameraKit, loadLenses, createMediaStreamSource, Transform2D, Lens, CameraKit, CameraKitSession } from "@/lib/camera-kit";
 import LensCarousel from "./LensCarousel";
 import CaptureControls from "./CaptureControls";
 import MediaPreview from "./MediaPreview";
@@ -25,23 +25,6 @@ export default function CameraView() {
   const [facing, setFacing] = useState<CameraFacing>("user");
   const [capturedMedia, setCapturedMedia] = useState<{ url: string; type: "photo" | "video" } | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [canvasSize, setCanvasSize] = useState({ width: 1080, height: 1920 });
-
-  // Resize canvas to fill container
-  useEffect(() => {
-    const updateSize = () => {
-      if (canvasRef.current?.parentElement) {
-        const parent = canvasRef.current.parentElement;
-        const dpr = window.devicePixelRatio || 1;
-        const w = parent.clientWidth * dpr;
-        const h = parent.clientHeight * dpr;
-        setCanvasSize({ width: w, height: h });
-      }
-    };
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
 
   // Timer for recording
   useEffect(() => {
@@ -67,14 +50,13 @@ export default function CameraView() {
         const sess = await ck.createSession({ liveRenderTarget: canvasRef.current! });
         if (cancelled) return;
         setSession(sess);
-        sess.play("live");
 
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
         setLenses(loadedLenses);
 
         // Start camera
-        await startCamera(sess, ck, "user");
+        await startCamera(sess, "user");
         setLoading(false);
       } catch (e) {
         console.error("Camera Kit init error:", e);
@@ -90,26 +72,38 @@ export default function CameraView() {
     };
   }, []);
 
-  const startCamera = async (sess: CameraKitSession, ck: CameraKit, facingMode: CameraFacing) => {
+  const startCamera = async (sess: CameraKitSession, facingMode: CameraFacing) => {
     try {
-      // Stop existing stream
+      // Pause session and stop existing tracks before switching (per SDK docs)
       if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+        sess.pause();
+        mediaStreamRef.current.getVideoTracks()[0]?.stop();
       }
 
+      // Always request standard LANDSCAPE dimensions — device handles orientation
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: facingMode,
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
         audio: false,
       });
 
       mediaStreamRef.current = stream;
-      const source = createMediaStreamSource(stream, { cameraType: facingMode === "user" ? "front" : "back" } as any);
+
+      const source = createMediaStreamSource(stream, {
+        cameraType: facingMode === "user" ? "front" : "back",
+      } as any);
+
       await sess.setSource(source);
-      sess.play("live");
+
+      // Mirror front camera using Transform2D (per SDK docs)
+      if (facingMode === "user") {
+        source.setTransform(Transform2D.MirrorX);
+      }
+
+      sess.play();
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
@@ -159,15 +153,15 @@ export default function CameraView() {
   const startRecording = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const stream = canvas.captureStream(30);
+    const canvasStream = canvas.captureStream(30);
 
-    // Add audio if available
+    // Combine canvas video with original audio if available
     if (mediaStreamRef.current) {
       const audioTracks = mediaStreamRef.current.getAudioTracks();
-      audioTracks.forEach((t) => stream.addTrack(t));
+      audioTracks.forEach((t) => canvasStream.addTrack(t));
     }
 
-    const recorder = new MediaRecorder(stream, {
+    const recorder = new MediaRecorder(canvasStream, {
       mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm",
     });
 
@@ -195,16 +189,16 @@ export default function CameraView() {
   };
 
   const handleFlipCamera = useCallback(async () => {
-    if (!session || !cameraKit) return;
+    if (!session) return;
     const newFacing = facing === "user" ? "environment" : "user";
     setFacing(newFacing);
     try {
-      await startCamera(session, cameraKit, newFacing);
+      await startCamera(session, newFacing);
     } catch {
       toast.error("Failed to switch camera");
       setFacing(facing);
     }
-  }, [session, cameraKit, facing]);
+  }, [session, facing]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -261,14 +255,11 @@ export default function CameraView() {
         )}
       </div>
 
-      {/* Camera canvas */}
+      {/* Camera canvas — use CSS object-fit:cover for fullscreen, standard canvas dims */}
       <div className="flex-1 relative overflow-hidden">
         <canvas
           ref={canvasRef}
-          width={canvasSize.width}
-          height={canvasSize.height}
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
         />
       </div>
 
