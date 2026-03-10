@@ -25,6 +25,23 @@ export default function CameraView() {
   const [facing, setFacing] = useState<CameraFacing>("user");
   const [capturedMedia, setCapturedMedia] = useState<{ url: string; type: "photo" | "video" } | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [canvasSize, setCanvasSize] = useState({ width: 1080, height: 1920 });
+
+  // Resize canvas to fill container
+  useEffect(() => {
+    const updateSize = () => {
+      if (canvasRef.current?.parentElement) {
+        const parent = canvasRef.current.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const w = parent.clientWidth * dpr;
+        const h = parent.clientHeight * dpr;
+        setCanvasSize({ width: w, height: h });
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   // Timer for recording
   useEffect(() => {
@@ -50,6 +67,7 @@ export default function CameraView() {
         const sess = await ck.createSession({ liveRenderTarget: canvasRef.current! });
         if (cancelled) return;
         setSession(sess);
+        sess.play("live");
 
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
@@ -91,7 +109,7 @@ export default function CameraView() {
       mediaStreamRef.current = stream;
       const source = createMediaStreamSource(stream, { cameraType: facingMode === "user" ? "front" : "back" } as any);
       await sess.setSource(source);
-      sess.play();
+      sess.play("live");
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
@@ -247,6 +265,8 @@ export default function CameraView() {
       <div className="flex-1 relative overflow-hidden">
         <canvas
           ref={canvasRef}
+          width={canvasSize.width}
+          height={canvasSize.height}
           className="absolute inset-0 w-full h-full object-cover"
           style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
         />
