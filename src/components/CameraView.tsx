@@ -25,6 +25,23 @@ export default function CameraView() {
   const [facing, setFacing] = useState<CameraFacing>("user");
   const [capturedMedia, setCapturedMedia] = useState<{ url: string; type: "photo" | "video" } | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [canvasSize, setCanvasSize] = useState({ width: 1080, height: 1920 });
+
+  // Resize canvas to fill container
+  useEffect(() => {
+    const updateSize = () => {
+      if (canvasRef.current?.parentElement) {
+        const parent = canvasRef.current.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const w = parent.clientWidth * dpr;
+        const h = parent.clientHeight * dpr;
+        setCanvasSize({ width: w, height: h });
+      }
+    };
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
 
   // Timer for recording
   useEffect(() => {
