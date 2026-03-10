@@ -109,7 +109,7 @@ export default function CameraView() {
       mediaStreamRef.current = stream;
       const source = createMediaStreamSource(stream, { cameraType: facingMode === "user" ? "front" : "back" } as any);
       await sess.setSource(source);
-      sess.play();
+      if (!sess.isPlaying) sess.play("live");
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
