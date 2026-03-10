@@ -264,6 +264,8 @@ export default function CameraView() {
       <div className="flex-1 relative overflow-hidden">
         <canvas
           ref={canvasRef}
+          width={canvasSize.width}
+          height={canvasSize.height}
           className="absolute inset-0 w-full h-full object-cover"
           style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
         />
