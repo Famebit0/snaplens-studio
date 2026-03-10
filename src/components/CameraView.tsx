@@ -94,7 +94,7 @@ export default function CameraView() {
 
       const source = createMediaStreamSource(stream, {
         cameraType: facingMode === "user" ? "front" : "back",
-      });
+      } as any);
 
       await sess.setSource(source);
 
