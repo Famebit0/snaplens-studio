@@ -10,7 +10,8 @@ const LENS_GROUP_ID = "686db339-3033-46be-83ce-e07891d5a87e";
 const DEMO_LENS_GROUP_ID = "9cd9719c-0c0f-4107-8f81-7367d11d1ed2";
 
 // Use staging in dev, production when deployed
-const isProduction = window.location.hostname !== "localhost" && !window.location.hostname.includes("preview");
+// Use production token ONLY on the published domain; everything else uses staging
+const isProduction = window.location.hostname === "snaplens-studio.lovable.app";
 const API_TOKEN = isProduction ? PRODUCTION_API_TOKEN : STAGING_API_TOKEN;
 
 let cameraKitInstance: CameraKit | null = null;
