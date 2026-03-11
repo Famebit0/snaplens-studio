@@ -351,9 +351,9 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.24.0", "", { "os": "win32", "cpu": "x64" }, "sha512-fbMkAF7fufku0N2dE5TBXcNlg0pt0cJue4xBRE2Qc5Vqikxr4VCgKj/ht6SMdFcOacVA9rqF70APJ8RN/4vMJw=="],
 
-    "@snap/camera-kit": ["@snap/camera-kit@1.14.0", "", { "dependencies": { "@bufbuild/protobuf": "^2.0.0", "@improbable-eng/grpc-web": "^0.15.0", "@snap/state-management": "^1.14.0", "@snap/ts-inject": "^0.3.1", "@types/trusted-types": "^2.0.7", "browser-fs-access": "^0.38.0", "browser-headers": "^0.4.1", "rxjs": "^7.5.7", "tslib": "^2.5.0", "uuid": "^10.0.0", "wasm-feature-detect": "^1.8.0" } }, "sha512-e+s1uzrWeLnD99OTK2h6teZuCmmtY7HOQquyDcVl4iIjQqKAK1EiBwHT/NMXuAwpHwOQ1k2cJ2X71i0ZVyjPvg=="],
+    "@snap/camera-kit": ["@snap/camera-kit@1.15.0", "", { "dependencies": { "@bufbuild/protobuf": "^2.0.0", "@improbable-eng/grpc-web": "^0.15.0", "@snap/state-management": "^1.15.0", "@snap/ts-inject": "^0.3.1", "@types/trusted-types": "^2.0.7", "browser-fs-access": "^0.38.0", "browser-headers": "^0.4.1", "rxjs": "^7.5.7", "tslib": "^2.5.0", "uuid": "^10.0.0", "wasm-feature-detect": "^1.8.0" } }, "sha512-SJ26ZRmH56xUS5KftNyTp0lNgpBPsPHXqmxHhurgLRLATdJeoW7/anUm2HtNVYOXOO6WrzvlWvKq/6hQ/msjGQ=="],
 
-    "@snap/state-management": ["@snap/state-management@1.14.0", "", { "peerDependencies": { "rxjs": "^7.5.7" } }, "sha512-QQozP+mD7ViOVC5w3QYYkT54CNdxxQRqd3J+PH4DkpGJayFCc7MoaitiALZnXi50sW2CtxLH6MNSOWl2HY3QtA=="],
+    "@snap/state-management": ["@snap/state-management@1.15.0", "", { "peerDependencies": { "rxjs": "^7.5.7" } }, "sha512-KPErhFvC82aPtYudV3L5uHKCmCE+FPg0GOmT15wEoRUvvv6ww+VnRZHnKN1itHaEZFhTnjSYC3myavRU4ppsFg=="],
 
     "@snap/ts-inject": ["@snap/ts-inject@0.3.2", "", {}, "sha512-qfJeleX3vhyPaQcwmtxZVr9tLQsm0/yZcSHAdJIX+f7CUP+kmf2K+XxBCUrUBVfPQci2Mai3CNZG7Rnk5J2G7w=="],
 
