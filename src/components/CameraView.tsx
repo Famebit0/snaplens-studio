@@ -9,10 +9,11 @@ import { toast } from "sonner";
 type CameraFacing = "user" | "environment";
 
 export default function CameraView() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const sessionRef = useRef<CameraKitSession | null>(null);
 
   const [cameraKit, setCameraKit] = useState<CameraKit | null>(null);
   const [session, setSession] = useState<CameraKitSession | null>(null);
@@ -36,7 +37,10 @@ export default function CameraView() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Initialize Camera Kit
+  // Initialize Camera Kit — per official React tutorial:
+  // 1. createSession() WITHOUT passing a canvas
+  // 2. Append session.output.live to container div
+  // 3. Call session.play("live")
   useEffect(() => {
     let cancelled = false;
     async function init() {
@@ -47,9 +51,23 @@ export default function CameraView() {
         if (cancelled) return;
         setCameraKit(ck);
 
-        const sess = await ck.createSession({ liveRenderTarget: canvasRef.current! });
+        // Create session WITHOUT a canvas — SDK creates its own managed canvas
+        const sess = await ck.createSession();
         if (cancelled) return;
+        sessionRef.current = sess;
         setSession(sess);
+
+        // Append SDK's output canvas to our container
+        if (canvasContainerRef.current) {
+          // Clear any previous canvases
+          canvasContainerRef.current.innerHTML = "";
+          const liveCanvas = sess.output.live;
+          // Style the SDK canvas to fill the container
+          liveCanvas.style.width = "100%";
+          liveCanvas.style.height = "100%";
+          liveCanvas.style.objectFit = "cover";
+          canvasContainerRef.current.appendChild(liveCanvas);
+        }
 
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
@@ -103,7 +121,8 @@ export default function CameraView() {
         source.setTransform(Transform2D.MirrorX);
       }
 
-      sess.play();
+      // Play the live output canvas (per official React tutorial)
+      sess.play("live" as any);
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
@@ -143,16 +162,17 @@ export default function CameraView() {
   }, [mode, isRecording]);
 
   const capturePhoto = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
+    // Use the SDK's live output canvas for capture
+    const canvas = sessionRef.current?.output.live;
+    if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     setCapturedMedia({ url: dataUrl, type: "photo" });
     toast.success("📸 Snap captured!");
   };
 
   const startRecording = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
+    const canvas = sessionRef.current?.output.live;
+    if (!canvas) return;
     const canvasStream = canvas.captureStream(30);
 
     // Combine canvas video with original audio if available
@@ -255,11 +275,11 @@ export default function CameraView() {
         )}
       </div>
 
-      {/* Camera canvas — use CSS object-fit:cover for fullscreen, standard canvas dims */}
+      {/* Camera canvas container — SDK appends its own canvas here */}
       <div className="flex-1 relative overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover"
+        <div
+          ref={canvasContainerRef}
+          className="absolute inset-0 w-full h-full"
         />
       </div>
 
