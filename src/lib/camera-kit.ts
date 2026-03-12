@@ -18,7 +18,7 @@ let cameraKitInstance: CameraKit | null = null;
 
 export async function initCameraKit(): Promise<CameraKit> {
   if (cameraKitInstance) return cameraKitInstance;
-  cameraKitInstance = await bootstrapCameraKit({ apiToken: API_TOKEN });
+  cameraKitInstance = await bootstrapCameraKit({ apiToken: API_TOKEN, logger: "console" });
   return cameraKitInstance;
 }
 

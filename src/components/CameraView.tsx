@@ -61,6 +61,16 @@ export default function CameraView() {
         sessionRef.current = sess;
         setSession(sess);
 
+        // Listen for lens execution errors (per SDK docs)
+        sess.events.addEventListener("error", (event: any) => {
+          const err = event.detail?.error;
+          console.error("CameraKit session error:", err);
+          if (err?.name === "LensExecutionError") {
+            toast.error("Lens encountered an error and was removed.");
+            setActiveLensId(null);
+          }
+        });
+
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
         setLenses(loadedLenses);
@@ -100,17 +110,14 @@ export default function CameraView() {
 
       mediaStreamRef.current = stream;
 
+      // Pass transform inline per SDK docs
       const source = createMediaStreamSource(stream, {
         cameraType: facingMode === "user" ? "user" : "environment",
+        transform: facingMode === "user" ? Transform2D.MirrorX : Transform2D.Identity,
       } as any);
 
       await sess.setSource(source);
-
-      if (facingMode === "user") {
-        source.setTransform(Transform2D.MirrorX);
-      }
-
-      sess.play("live" as any);
+      await sess.play("live" as any);
     } catch (e) {
       console.error("Camera start error:", e);
       throw e;
