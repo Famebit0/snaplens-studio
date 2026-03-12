@@ -61,6 +61,16 @@ export default function CameraView() {
         sessionRef.current = sess;
         setSession(sess);
 
+        // Listen for lens execution errors (per SDK docs)
+        sess.events.addEventListener("error", (event: any) => {
+          const err = event.detail?.error;
+          console.error("CameraKit session error:", err);
+          if (err?.name === "LensExecutionError") {
+            toast.error("Lens encountered an error and was removed.");
+            setActiveLensId(null);
+          }
+        });
+
         const loadedLenses = await loadLenses(ck);
         if (cancelled) return;
         setLenses(loadedLenses);
