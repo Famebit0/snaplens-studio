@@ -219,101 +219,94 @@ export default function CameraView() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <div className="w-20 h-20 rounded-full lens-ring animate-spin" />
-          <Ghost className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-        </div>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="font-medium">Loading Camera Kit...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <AlertCircle className="w-12 h-12 text-snap-red" />
-        <h2 className="text-xl font-bold text-foreground">Oops!</h2>
-        <p className="text-muted-foreground max-w-sm">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-6 py-3 rounded-full bg-primary text-primary-foreground font-bold active:scale-95 transition-transform"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
-        <div className="glass-card px-3 py-1.5 rounded-full">
-          <span className="text-xs font-bold text-primary">SNAP</span>
-          <span className="text-xs font-medium text-foreground"> CAM</span>
-        </div>
-        {isRecording && (
-          <div className="glass-card px-3 py-1.5 rounded-full flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-snap-red animate-recording-pulse" />
-            <span className="text-xs font-mono font-bold text-snap-red">{formatTime(recordingTime)}</span>
+      {/* Canvas always in DOM so ref is available during init */}
+      <canvas
+        ref={canvasRef}
+        className={loading || error ? "hidden" : "absolute inset-0 w-full h-full object-cover z-0"}
+      />
+
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 z-20 bg-background flex flex-col items-center justify-center gap-4">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-full lens-ring animate-spin" />
+            <Ghost className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-        )}
-      </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="font-medium">Loading Camera Kit...</span>
+          </div>
+        </div>
+      )}
 
-      {/* Camera canvas — SDK renders directly to this canvas via liveRenderTarget */}
-      <div className="flex-1 relative overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      </div>
-
-      {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 pb-6 pt-4 safe-bottom space-y-4">
-        {/* Mode indicator */}
-        <div className="flex justify-center gap-6">
+      {/* Error overlay */}
+      {error && (
+        <div className="absolute inset-0 z-20 bg-background flex flex-col items-center justify-center gap-4 p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-snap-red" />
+          <h2 className="text-xl font-bold text-foreground">Oops!</h2>
+          <p className="text-muted-foreground max-w-sm">{error}</p>
           <button
-            onClick={() => setMode("photo")}
-            className={`text-xs font-bold uppercase tracking-wider transition-all ${
-              mode === "photo" ? "text-primary" : "text-muted-foreground"
-            }`}
+            onClick={() => window.location.reload()}
+            className="mt-4 px-6 py-3 rounded-full bg-primary text-primary-foreground font-bold active:scale-95 transition-transform"
           >
-            Photo
-          </button>
-          <button
-            onClick={() => setMode("video")}
-            className={`text-xs font-bold uppercase tracking-wider transition-all ${
-              mode === "video" ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            Video
+            Try Again
           </button>
         </div>
+      )}
 
-        {/* Lens carousel */}
-        {!isRecording && (
-          <LensCarousel lenses={lenses} activeLensId={activeLensId} onSelectLens={handleSelectLens} />
-        )}
+      {/* UI controls — only when ready */}
+      {!loading && !error && (
+        <>
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
+            <div className="glass-card px-3 py-1.5 rounded-full">
+              <span className="text-xs font-bold text-primary">SNAP</span>
+              <span className="text-xs font-medium text-foreground"> CAM</span>
+            </div>
+            {isRecording && (
+              <div className="glass-card px-3 py-1.5 rounded-full flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-snap-red animate-recording-pulse" />
+                <span className="text-xs font-mono font-bold text-snap-red">{formatTime(recordingTime)}</span>
+              </div>
+            )}
+          </div>
 
-        {/* Capture controls */}
-        <CaptureControls
-          mode={mode}
-          isRecording={isRecording}
-          onCapture={handleCapture}
-          onToggleMode={() => setMode((m) => (m === "photo" ? "video" : "photo"))}
-          onFlipCamera={handleFlipCamera}
-        />
-      </div>
+          <div className="absolute bottom-0 left-0 right-0 z-10 pb-6 pt-4 safe-bottom space-y-4">
+            <div className="flex justify-center gap-6">
+              <button
+                onClick={() => setMode("photo")}
+                className={`text-xs font-bold uppercase tracking-wider transition-all ${
+                  mode === "photo" ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                Photo
+              </button>
+              <button
+                onClick={() => setMode("video")}
+                className={`text-xs font-bold uppercase tracking-wider transition-all ${
+                  mode === "video" ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                Video
+              </button>
+            </div>
 
-      {/* Media preview overlay */}
+            {!isRecording && (
+              <LensCarousel lenses={lenses} activeLensId={activeLensId} onSelectLens={handleSelectLens} />
+            )}
+
+            <CaptureControls
+              mode={mode}
+              isRecording={isRecording}
+              onCapture={handleCapture}
+              onToggleMode={() => setMode((m) => (m === "photo" ? "video" : "photo"))}
+              onFlipCamera={handleFlipCamera}
+            />
+          </div>
+        </>
+      )}
+
       {capturedMedia && (
         <MediaPreview
           mediaUrl={capturedMedia.url}
